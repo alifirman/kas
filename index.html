@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GriyaArtha - Pencatatan Keuangan Rumah Tangga</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="text-center">
+            <div class="spinner"></div>
+            <p style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-gray); font-weight: 500;">Sinkronisasi Google Sheets...</p>
+        </div>
+    </div>
+
+    <!-- Navigasi Atas Gelap -->
+    <nav class="navbar">
+        <div class="brand">
+            <div class="brand-title">
+                <i class="fa-solid fa-house-laptop"></i>
+                <span>GriyaArtha</span>
+            </div>
+            <div class="brand-sub">FINANSIAL RUMAH TANGGA</div>
+        </div>
+        
+        <div class="nav-tabs">
+            <button id="tabBtn-dasbor" class="nav-tab-item active" onclick="aplikasi.switchTab('dasbor', this)"><i class="fa-solid fa-chart-simple"></i> Dasbor</button>
+            <button id="tabBtn-transaksi" class="nav-tab-item" onclick="aplikasi.switchTab('transaksi', this)"><i class="fa-solid fa-pen-to-square"></i> Catat Transaksi</button>
+            <button id="tabBtn-tabungan" class="nav-tab-item" onclick="aplikasi.switchTab('tabungan', this)"><i class="fa-solid fa-piggy-bank"></i> Rencana Tabungan</button>
+            <button id="tabBtn-riwayat" class="nav-tab-item" onclick="aplikasi.switchTab('riwayat', this)"><i class="fa-solid fa-receipt"></i> Riwayat & Filter</button>
+        </div>
+
+        <div class="nav-meta">
+            <div id="navMetaDate" class="nav-meta-date">-</div>
+            <div class="nav-meta-sub">Pencatatan Mandiri & Aman</div>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- Hero Section -->
+        <div class="hero">
+            <div class="hero-text">
+                <h1>Kondisi Keuangan Rumah</h1>
+                <p>Kelola belanja harian, kontribusi warga, pendidikan, hingga target barang impian Anda.</p>
+            </div>
+            <div class="hero-filters">
+                <span class="hero-filters-label">FILTER GLOBAL:</span>
+                <select id="filterBulan" onchange="aplikasi.handleFilterChange()">
+                    <option value="all">Semua Bulan</option>
+                    <option value="01">Januari</option>
+                    <option value="02">Februari</option>
+                    <option value="03">Maret</option>
+                    <option value="04">April</option>
+                    <option value="05">Mei</option>
+                    <option value="06">Juni</option>
+                    <option value="07">Juli</option>
+                    <option value="08">Agustus</option>
+                    <option value="09">September</option>
+                    <option value="10">Oktober</option>
+                    <option value="11">November</option>
+                    <option value="12">Desember</option>
+                </select>
+                <select id="filterTahun" onchange="aplikasi.handleFilterChange()">
+                </select>
+            </div>
+        </div>
+
+        <!-- Kartu Statistik Gelap Transparan -->
+        <div class="stats-row">
+            <div class="stat-card pendapatan">
+                <div class="stat-info">
+                    <p>TOTAL PENDAPATAN</p>
+                    <h2 id="statPendapatan">Rp 0</h2>
+                    <div class="stat-desc">Bulan & tahun tersaring</div>
+                </div>
+                <div class="stat-icon-wrapper"><i class="fa-solid fa-wallet"></i></div>
+            </div>
+            <div class="stat-card pengeluaran">
+                <div class="stat-info">
+                    <p>TOTAL PENGELUARAN</p>
+                    <h2 id="statPengeluaran">Rp 0</h2>
+                    <div class="stat-desc">Termasuk iuran & belanja</div>
+                </div>
+                <div class="stat-icon-wrapper"><i class="fa-solid fa-arrow-down-long"></i></div>
+            </div>
+            <div class="stat-card saldo">
+                <div class="stat-info">
+                    <p>SISA SALDO KAS</p>
+                    <h2 id="statKasAktif">Rp 0</h2>
+                    <div class="stat-desc">Kas aman & stabil</div>
+                </div>
+                <div class="stat-icon-wrapper"><i class="fa-solid fa-scale-balanced"></i></div>
+            </div>
+            <div class="stat-card tabungan">
+                <div class="stat-info">
+                    <p>DANA TERKUMPUL TABUNGAN</p>
+                    <h2 id="statTabunganTerkumpul">Rp 0</h2>
+                    <div class="stat-desc">Untuk target pembelian</div>
+                </div>
+                <div class="stat-icon-wrapper"><i class="fa-solid fa-piggy-bank"></i></div>
+            </div>
+        </div>
+
+        <!-- TAMPILAN VIEW 1: DASBOR -->
+        <div id="viewDasbor" class="view-section active">
+            <div class="bottom-grid">
+                <!-- Left: Pembagian Pengeluaran -->
+                <div class="light-card">
+                    <div class="light-card-title">
+                        <div class="light-card-title-left">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Pembagian Pengeluaran</span>
+                        </div>
+                        <span class="light-card-title-badge info">Kategori Terpilih</span>
+                    </div>
+                    
+                    <div class="donut-layout">
+                        <div class="donut-chart-container">
+                            <canvas id="chartPengeluaran"></canvas>
+                            <div id="chartEmptyState" style="display:none; text-align:center; color: var(--text-muted);">
+                                <i class="fa-solid fa-chart-line" style="font-size: 2.25rem; color: #cbd5e1; margin-bottom: 0.5rem; display: block;"></i>
+                                <p style="font-size: 0.8rem;">Belum ada pengeluaran.</p>
+                            </div>
+                        </div>
+                        <div id="chartLegendList" class="donut-legend-list">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right: Target Pembelian & Checklist Wajib -->
+                <div class="right-column">
+                    <div class="light-card">
+                        <div class="light-card-title">
+                            <div class="light-card-title-left">
+                                <i class="fa-solid fa-circle-notch" style="transform: rotate(45deg);"></i>
+                                <span>Target Pembelian Terdekat</span>
+                            </div>
+                            <a class="light-card-title-link" onclick="aplikasi.switchTab('tabungan')">Semua</a>
+                        </div>
+                        <div id="daftarTabunganRingkasan" class="target-list">
+                        </div>
+                    </div>
+                    
+                    <div class="light-card">
+                        <div class="light-card-title">
+                            <div class="light-card-title-left">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Checklist Pengeluaran Rumah</span>
+                            </div>
+                            <span class="light-card-title-badge wajib">WAJIB</span>
+                        </div>
+                        <div id="checklistWajib" class="checklist-list">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAMPILAN VIEW 2: CATAT TRANSAKSI -->
+        <div id="viewTransaksi" class="view-section">
+            <div class="centered-container light-card">
+                <div class="light-card-title">
+                    <div class="light-card-title-left">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Rekam Mutasi Baru</span>
+                    </div>
+                </div>
+                <form id="formTransaksi" onsubmit="aplikasi.simpanTransaksi(event)">
+                    <div class="form-group">
+                        <label>Tanggal Transaksi</label>
+                        <input type="date" id="txTanggal" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Jenis Arus Kas</label>
+                        <select id="txTipe" class="form-control" onchange="aplikasi.renderPilihanKategori()" required>
+                            <option value="Pengeluaran">Pengeluaran (-)</option>
+                            <option value="Pemasukan">Pemasukan (+)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Kategori</label>
+                        <select id="txKategori" class="form-control" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nominal Tunai (Rp)</label>
+                        <input type="number" id="txNominal" class="form-control" placeholder="Contoh: 50000" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Keterangan Tambahan</label>
+                        <input type="text" id="txKeterangan" class="form-control" placeholder="Catatan opsional">
+                    </div>
+                    <button type="submit" class="btn-submit">Sematkan Catatan</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAMPILAN VIEW 3: RENCANA TABUNGAN -->
+        <div id="viewTabungan" class="view-section">
+            <div class="bottom-grid">
+                <!-- Tambah Tabungan -->
+                <div class="light-card">
+                    <div class="light-card-title">
+                        <div class="light-card-title-left">
+                            <i class="fa-solid fa-piggy-bank"></i>
+                            <span>Buka Rencana Celengan Baru</span>
+                        </div>
+                    </div>
+                    <form id="formTabungan" onsubmit="aplikasi.simpanTabungan(event)">
+                        <div class="form-group">
+                            <label>Nama Barang Impian</label>
+                            <input type="text" id="tbNama" class="form-control" placeholder="Contoh: Laptop Anak Sekolah" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Target Dana (Rp)</label>
+                            <input type="number" id="tbTarget" class="form-control" placeholder="Contoh: 5000000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Target Deadline Pencapaian</label>
+                            <input type="date" id="tbDeadline" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn-submit" style="background-color: var(--warning); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.2);">Buat Rencana Celengan</button>
+                    </form>
+                </div>
+                
+                <!-- Kelola Tabungan -->
+                <div class="light-card">
+                    <div class="light-card-title">
+                        <div class="light-card-title-left">
+                            <i class="fa-solid fa-circle-arrow-up"></i>
+                            <span>Kelola Celengan Impian</span>
+                        </div>
+                    </div>
+                    <div id="daftarTabunganLengkap" class="saving-list">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAMPILAN VIEW 4: RIWAYAT & FILTER -->
+        <div id="viewRiwayat" class="view-section">
+            <div class="centered-container light-card">
+                <div class="light-card-title">
+                    <div class="light-card-title-left">
+                        <i class="fa-solid fa-receipt"></i>
+                        <span>Riwayat Pembukuan Arus Kas</span>
+                    </div>
+                    <button class="btn-settings" onclick="aplikasi.bukaModalIuran()" title="Atur Kategori Iuran Wajib"><i class="fa-solid fa-gear"></i></button>
+                </div>
+                
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchTransaksi" class="form-control" placeholder="Cari keterangan atau kategori...">
+                </div>
+                
+                <div class="filter-tabs">
+                    <button id="btnFilter-semua" class="filter-btn active" onclick="aplikasi.setTxFilterType('semua', this)">Semua</button>
+                    <button id="btnFilter-pemasukan" class="filter-btn" onclick="aplikasi.setTxFilterType('pemasukan', this)">Pemasukan</button>
+                    <button id="btnFilter-pengeluaran" class="filter-btn" onclick="aplikasi.setTxFilterType('pengeluaran', this)">Pengeluaran</button>
+                </div>
+                
+                <div id="daftarTransaksi" class="tx-list">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal Pengaturan Iuran Wajib Kustom -->
+    <div id="modalIuran" class="modal-overlay" onclick="if(event.target === this) aplikasi.tutupModalIuran()">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Kelola Iuran Wajib Bulanan</h3>
+                <button class="modal-close" onclick="aplikasi.tutupModalIuran()">&times;</button>
+            </div>
+            
+            <div id="modalIuranList" class="modal-iuran-list">
+            </div>
+            
+            <form id="formTambahIuran" onsubmit="aplikasi.tambahKategoriWajibKlik(event)">
+                <h4 style="font-size: 0.85rem; margin-bottom: 0.5rem; font-weight: 700; color: var(--text-dark);">Tambah Iuran Baru</h4>
+                <div class="form-group">
+                    <input type="text" id="newIuranNama" class="form-control" placeholder="Nama Iuran (Contoh: Iuran Kebersihan RT)" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem;">
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Ikon</label>
+                        <select id="newIuranIcon" class="form-control" required style="padding: 0.45rem;">
+                            <option value="fa-bolt">Listrik (⚡)</option>
+                            <option value="fa-wifi">Wifi (📶)</option>
+                            <option value="fa-graduation-cap">Pendidikan (🎓)</option>
+                            <option value="fa-book-open-reader">Mengaji (📖)</option>
+                            <option value="fa-skull-crossbones">Sosial (☠️)</option>
+                            <option value="fa-faucet-drip">Air / PAM (🚰)</option>
+                            <option value="fa-shield-halved">Keamanan (🛡️)</option>
+                            <option value="fa-trash-can">Kebersihan (🗑️)</option>
+                            <option value="fa-circle-dollar-to-slot">Arisan (💵)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Warna</label>
+                        <select id="newIuranColor" class="form-control" required style="padding: 0.45rem;">
+                            <option value="#3b82f6" style="color:#3b82f6;">Biru</option>
+                            <option value="#10b981" style="color:#10b981;">Hijau</option>
+                            <option value="#eab308" style="color:#eab308;">Kuning</option>
+                            <option value="#f97316" style="color:#f97316;">Oranye</option>
+                            <option value="#ec4899" style="color:#ec4899;">Merah Muda</option>
+                            <option value="#6366f1" style="color:#6366f1;">Indigo</option>
+                            <option value="#a855f7" style="color:#a855f7;">Ungu</option>
+                            <option value="#ef4444" style="color:#ef4444;">Merah</option>
+                            <option value="#64748b" style="color:#64748b;">Abu-abu</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" style="margin-top: 0; padding: 0.6rem;">Tambah Iuran</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Navigasi Mobile Bawah Gelap -->
+    <div class="mobile-nav">
+        <button id="mobileTabBtn-dasbor" class="mobile-nav-item active" onclick="aplikasi.switchTab('dasbor', this)"><i class="fa-solid fa-chart-simple"></i>Dasbor</button>
+        <button id="mobileTabBtn-transaksi" class="mobile-nav-item" onclick="aplikasi.switchTab('transaksi', this)"><i class="fa-solid fa-circle-plus"></i>Catat</button>
+        <button id="mobileTabBtn-tabungan" class="mobile-nav-item" onclick="aplikasi.switchTab('tabungan', this)"><i class="fa-solid fa-piggy-bank"></i>Tabungan</button>
+        <button id="mobileTabBtn-riwayat" class="mobile-nav-item" onclick="aplikasi.switchTab('riwayat', this)"><i class="fa-solid fa-receipt"></i>Riwayat</button>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

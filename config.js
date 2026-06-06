@@ -1,0 +1,4 @@
+const CONFIG = {
+    // SALIN DAN TEMPELKAN URL WEB APP GOOGLE APPS SCRIPT ANDA DI SINI
+    API_URL: "https://script.google.com/macros/s/AKfycbzPr-HPZ4AIpMmkMi2RIM0YPnQ3AOn7j0ERiuXA3dw-KxT9NFLX55G68Lcw51HCYtJ9dw/exec"
+};
