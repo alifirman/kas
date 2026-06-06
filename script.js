@@ -2,10 +2,10 @@ class ManajerKeuanganRumah {
     constructor() {
         this.db = { transaksi: [], tabungan: [] };
         this.chart = null;
-        this.txFilterType = 'semua'; // 'semua', 'pemasukan', 'pengeluaran'
+        this.txFilterType = 'semua';
         this.searchQuery = '';
+        this.isFirstLoad = true; // Flag agar filter hanya di-set otomatis saat pertama kali
         
-        // Inisialisasi Kategori Wajib dari localStorage atau default
         this.initKategoriWajib();
     }
 
@@ -50,7 +50,7 @@ class ManajerKeuanganRumah {
         document.getElementById('txTanggal').valueAsDate = new Date();
         this.renderPilihanKategori();
         
-        // Perbaikan inisialisasi tab mobile & desktop
+        // Inisialisasi tab
         this.switchTab('dasbor');
         
         // Setup listener untuk search input
@@ -69,11 +69,7 @@ class ManajerKeuanganRumah {
         const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
         const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
         const skrg = new Date();
-        const dayName = days[skrg.getDay()];
-        const date = skrg.getDate();
-        const monthName = months[skrg.getMonth()];
-        const year = skrg.getFullYear();
-        return `${dayName}, ${date} ${monthName} ${year}`;
+        return `${days[skrg.getDay()]}, ${skrg.getDate()} ${months[skrg.getMonth()]} ${skrg.getFullYear()}`;
     }
 
     showLoader(show) {
@@ -83,28 +79,35 @@ class ManajerKeuanganRumah {
     initFilterTahun() {
         const select = document.getElementById('filterTahun');
         if (!select) return;
+        
+        const currentVal = select.value; // Simpan nilai sekarang
         select.innerHTML = '';
         const thnSekarang = new Date().getFullYear();
         
-        // Buat set tahun default
         const yearsSet = new Set([thnSekarang - 1, thnSekarang, thnSekarang + 1]);
         
         // Tambahkan tahun dari transaksi jika ada
         this.db.transaksi.forEach(t => {
-            if (t.tanggal) {
-                const y = new Date(t.tanggal).getFullYear();
+            const bt = this.extractBulanTahun(t);
+            if (bt) {
+                const y = parseInt(bt.split('-')[0]);
                 if (!isNaN(y)) yearsSet.add(y);
             }
         });
 
-        // Urutkan tahun
         const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
         sortedYears.forEach(i => {
             let opt = document.createElement('option');
             opt.value = i; opt.textContent = i;
-            if (i === thnSekarang) opt.selected = true;
             select.appendChild(opt);
         });
+        
+        // Kembalikan pilihan sebelumnya jika ada, atau default ke tahun sekarang
+        if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+            select.value = currentVal;
+        } else {
+            select.value = thnSekarang;
+        }
     }
 
     setBulanTahunSaatIni() {
@@ -118,6 +121,37 @@ class ManajerKeuanganRumah {
         const bln = document.getElementById('filterBulan').value;
         const thn = document.getElementById('filterTahun').value;
         return { bln, thn };
+    }
+
+    /**
+     * Ekstrak bulan_tahun yang konsisten dari transaksi.
+     * Prioritaskan field bulan_tahun, lalu fallback ke tanggal.
+     * Menangani kasus dimana Google Sheets auto-convert "2026-07" menjadi Date
+     * dan gas.js mengembalikannya sebagai "2026-07-01" atau "2026-07".
+     */
+    extractBulanTahun(t) {
+        if (t.bulan_tahun != null && String(t.bulan_tahun).trim() !== '') {
+            const btStr = String(t.bulan_tahun).trim();
+            
+            // Format sempurna YYYY-MM
+            if (/^\d{4}-\d{2}$/.test(btStr)) {
+                return btStr;
+            }
+            // Format YYYY-MM-DD (Sheets mungkin auto-convert "2026-07" jadi date lalu dikembalikan sebagai "2026-07-01")
+            const dateMatch = btStr.match(/^(\d{4})-(\d{2})-\d{2}/);
+            if (dateMatch) {
+                return `${dateMatch[1]}-${dateMatch[2]}`;
+            }
+        }
+        // Fallback ke tanggal jika bulan_tahun tidak tersedia/invalid
+        if (t.tanggal) {
+            const tglStr = String(t.tanggal);
+            const match = tglStr.match(/^(\d{4})-(\d{2})/);
+            if (match) {
+                return `${match[1]}-${match[2]}`;
+            }
+        }
+        return null;
     }
 
     renderPilihanKategori() {
@@ -136,6 +170,46 @@ class ManajerKeuanganRumah {
         }
     }
 
+    setBulanTahunKeTransaksiTerbaru() {
+        if (this.db.transaksi.length === 0) return;
+        
+        let terbaru = null;
+        this.db.transaksi.forEach(t => {
+            const bt = this.extractBulanTahun(t);
+            if (bt) {
+                if (!terbaru || bt > terbaru) {
+                    terbaru = bt;
+                }
+            }
+        });
+        
+        if (terbaru) {
+            const [y, m] = terbaru.split('-');
+            
+            const monthSelect = document.getElementById('filterBulan');
+            const yearSelect = document.getElementById('filterTahun');
+            
+            if (monthSelect) monthSelect.value = m;
+            
+            if (yearSelect) {
+                let found = false;
+                for (let i = 0; i < yearSelect.options.length; i++) {
+                    if (yearSelect.options[i].value === y) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    yearSelect.appendChild(opt);
+                }
+                yearSelect.value = y;
+            }
+        }
+    }
+
     async sinkronisasiDataSheets() {
         this.showLoader(true);
         try {
@@ -146,6 +220,13 @@ class ManajerKeuanganRumah {
                 this.db.tabungan = resJson.data.tabungan || [];
                 
                 this.initFilterTahun();
+                
+                // Hanya set filter otomatis pada load pertama
+                if (this.isFirstLoad) {
+                    this.setBulanTahunSaatIni(); // Set ke bulan & tahun sekarang
+                    this.isFirstLoad = false;
+                }
+                
                 this.prosesDanRenderTampilan();
                 
                 const Toast = Swal.mixin({
@@ -194,9 +275,42 @@ class ManajerKeuanganRumah {
         }
     }
 
-    prosesDanRenderTampilan() {
+    getFilteredTransaksi() {
         const { bln, thn } = this.getPeriodeTerpilih();
+        let txFilter = this.db.transaksi;
         
+        if (thn) {
+            if (bln && bln !== "all") {
+                const targetPeriode = `${thn}-${bln}`;
+                txFilter = txFilter.filter(t => {
+                    const bt = this.extractBulanTahun(t);
+                    return bt === targetPeriode;
+                });
+            } else {
+                txFilter = txFilter.filter(t => {
+                    const bt = this.extractBulanTahun(t);
+                    return bt && bt.startsWith(thn);
+                });
+            }
+        }
+        return txFilter;
+    }
+
+    /**
+     * Mendapatkan label periode yang sedang aktif untuk ditampilkan di UI
+     */
+    getLabelPeriode() {
+        const { bln, thn } = this.getPeriodeTerpilih();
+        const namaBulan = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+            "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        
+        if (bln && bln !== "all") {
+            return `${namaBulan[parseInt(bln)]} ${thn}`;
+        }
+        return `Tahun ${thn}`;
+    }
+
+    prosesDanRenderTampilan() {
         // 1. Hitung Saldo Kas Riil (Kumulatif Seluruh Waktu)
         let totalPemasukanSemua = 0;
         let totalPengeluaranSemua = 0;
@@ -210,26 +324,13 @@ class ManajerKeuanganRumah {
         const statKasAktifEl = document.getElementById('statKasAktif');
         if (statKasAktifEl) {
             statKasAktifEl.textContent = this.formatRupiah(totalKasAktif);
-            statKasAktifEl.style.color = totalKasAktif < 0 ? '#f43f5e' : '#f59e0b';
+            statKasAktifEl.style.color = totalKasAktif < 0 ? '#f43f5e' : '';
         }
 
-        // 2. Saring Transaksi Berdasarkan Filter Global (Tahun & Bulan)
-        let txFilter = this.db.transaksi;
-        if (thn) {
-            txFilter = txFilter.filter(t => {
-                if (!t.tanggal) return false;
-                return new Date(t.tanggal).getFullYear().toString() === thn;
-            });
-        }
-        if (bln && bln !== "all") {
-            txFilter = txFilter.filter(t => {
-                if (!t.tanggal) return false;
-                const m = String(new Date(t.tanggal).getMonth() + 1).padStart(2, '0');
-                return m === bln;
-            });
-        }
+        // 2. Saring Transaksi Berdasarkan Filter Global menggunakan extractBulanTahun
+        const txFilter = this.getFilteredTransaksi();
 
-        // 3. Hitung Statistik Tersaring (Pendapatan & Pengeluaran Bulan/Tahun Ini)
+        // 3. Hitung Statistik Tersaring
         let totalPendapatanFilter = 0;
         let totalPengeluaranFilter = 0;
         txFilter.forEach(t => {
@@ -244,7 +345,14 @@ class ManajerKeuanganRumah {
         const statPengeluaranEl = document.getElementById('statPengeluaran');
         if (statPengeluaranEl) statPengeluaranEl.textContent = this.formatRupiah(totalPengeluaranFilter);
 
-        // 4. Hitung Total Dana Terkumpul Tabungan (Dari seluruh celengan aktif)
+        // 4. Update label deskripsi stat card dengan periode aktif
+        const labelPeriode = this.getLabelPeriode();
+        const descPendapatan = document.getElementById('descPendapatan');
+        const descPengeluaran = document.getElementById('descPengeluaran');
+        if (descPendapatan) descPendapatan.textContent = `Periode: ${labelPeriode}`;
+        if (descPengeluaran) descPengeluaran.textContent = `Periode: ${labelPeriode}`;
+
+        // 5. Hitung Total Dana Terkumpul Tabungan
         let totalTabunganTerkumpul = 0;
         this.db.tabungan.forEach(tb => {
             totalTabunganTerkumpul += Number(tb.terkumpul || 0);
@@ -252,7 +360,7 @@ class ManajerKeuanganRumah {
         const statTabunganTerkumpulEl = document.getElementById('statTabunganTerkumpul');
         if (statTabunganTerkumpulEl) statTabunganTerkumpulEl.textContent = this.formatRupiah(totalTabunganTerkumpul);
 
-        // 5. Render Komponen Tampilan
+        // 6. Render Komponen Tampilan
         this.renderChecklistWajib(txFilter);
         this.renderDaftarTransaksi(txFilter);
         this.renderGrafikDonut(txFilter);
@@ -264,11 +372,18 @@ class ManajerKeuanganRumah {
         if (!container) return;
         container.innerHTML = '';
 
+        // Tampilkan label periode aktif
+        const labelPeriode = this.getLabelPeriode();
+        const periodBadge = document.createElement('div');
+        periodBadge.className = 'checklist-period-badge';
+        periodBadge.innerHTML = `<i class="fa-regular fa-calendar"></i> ${labelPeriode}`;
+        container.appendChild(periodBadge);
+
         const keys = Object.keys(this.kategoriWajib);
         if (keys.length === 0) {
-            container.innerHTML = `
+            container.innerHTML += `
                 <div style="text-align: center; padding: 1.5rem; color: var(--text-muted); font-size: 0.8rem;">
-                    Belum ada iuran wajib bulanan. Klik tombol roda gigi di tab "Riwayat & Filter" untuk menambah.
+                    Belum ada iuran wajib bulanan. Klik tombol <i class="fa-solid fa-gear"></i> untuk menambah.
                 </div>
             `;
             return;
@@ -276,14 +391,18 @@ class ManajerKeuanganRumah {
 
         keys.forEach(kat => {
             const item = this.kategoriWajib[kat];
-            const ditemukan = txFilter.find(t => t.kategori === kat && t.tipe === "Pengeluaran");
+            // Cari SEMUA pembayaran untuk kategori ini dalam periode tersaring
+            const pembayaranDitemukan = txFilter.filter(t => t.kategori === kat && t.tipe === "Pengeluaran");
+            const jumlahBayar = pembayaranDitemukan.length;
+            const totalNominal = pembayaranDitemukan.reduce((sum, t) => sum + Number(t.nominal), 0);
             
             let statusHtml = '';
             let rightHtml = '';
             
-            if (ditemukan) {
-                statusHtml = `<span class="checklist-item-status lunas"><i class="fa-solid fa-circle-check"></i> Sudah Dibayar</span>`;
-                rightHtml = `<span class="checklist-item-right">${this.formatRupiah(ditemukan.nominal)}</span>`;
+            if (jumlahBayar > 0) {
+                const kaliLabel = jumlahBayar > 1 ? `(${jumlahBayar}x)` : '';
+                statusHtml = `<span class="checklist-item-status lunas"><i class="fa-solid fa-circle-check"></i> Sudah Dibayar ${kaliLabel}</span>`;
+                rightHtml = `<span class="checklist-item-right">${this.formatRupiah(totalNominal)}</span>`;
             } else {
                 statusHtml = `<span class="checklist-item-status belum"><i class="fa-solid fa-circle-xmark"></i> Belum Dibayar</span>`;
                 rightHtml = `<button class="checklist-item-pay-btn" onclick="aplikasi.rekamCepatWajib('${kat}')">Bayar</button>`;
@@ -311,21 +430,7 @@ class ManajerKeuanganRumah {
         document.querySelectorAll('.filter-btn').forEach(el => el.classList.remove('active'));
         if (btn) btn.classList.add('active');
         
-        const { bln, thn } = this.getPeriodeTerpilih();
-        let txFilter = this.db.transaksi;
-        if (thn) {
-            txFilter = txFilter.filter(t => {
-                if (!t.tanggal) return false;
-                return new Date(t.tanggal).getFullYear().toString() === thn;
-            });
-        }
-        if (bln && bln !== "all") {
-            txFilter = txFilter.filter(t => {
-                if (!t.tanggal) return false;
-                const m = String(new Date(t.tanggal).getMonth() + 1).padStart(2, '0');
-                return m === bln;
-            });
-        }
+        const txFilter = this.getFilteredTransaksi();
         this.renderDaftarTransaksi(txFilter);
     }
 
@@ -359,7 +464,26 @@ class ManajerKeuanganRumah {
             return;
         }
 
-        const terurut = [...filtered].sort((a,b) => new Date(b.tanggal) - new Date(a.tanggal));
+        // Tampilkan jumlah transaksi
+        const totalPemasukan = filtered.filter(t => t.tipe === 'Pemasukan').reduce((s, t) => s + Number(t.nominal), 0);
+        const totalPengeluaran = filtered.filter(t => t.tipe !== 'Pemasukan').reduce((s, t) => s + Number(t.nominal), 0);
+        
+        container.innerHTML = `
+            <div class="tx-summary-bar">
+                <span>${filtered.length} transaksi ditemukan</span>
+                <span class="tx-summary-amounts">
+                    ${totalPemasukan > 0 ? `<span class="pemasukan">+${this.formatRupiah(totalPemasukan)}</span>` : ''}
+                    ${totalPengeluaran > 0 ? `<span class="pengeluaran">-${this.formatRupiah(totalPengeluaran)}</span>` : ''}
+                </span>
+            </div>
+        `;
+
+        const terurut = [...filtered].sort((a, b) => {
+            // Sort berdasarkan tanggal string agar konsisten
+            const tglA = String(a.tanggal || '');
+            const tglB = String(b.tanggal || '');
+            return tglB.localeCompare(tglA);
+        });
 
         terurut.forEach(t => {
             const simbol = t.tipe === "Pemasukan" ? "+" : "-";
@@ -399,7 +523,6 @@ class ManajerKeuanganRumah {
             return;
         }
 
-        // Tampilkan 2-3 celengan terdekat
         const targets = this.db.tabungan.slice(0, 3);
         targets.forEach(tb => {
             const target = Number(tb.target);
@@ -485,8 +608,12 @@ class ManajerKeuanganRumah {
         const summaryKategori = {};
         this.semuaKategoriPengeluaran.forEach(k => summaryKategori[k] = 0);
 
+        // Tambahkan juga kategori yang ada di transaksi tapi tidak di daftar
         txFilter.forEach(t => {
-            if (t.tipe === "Pengeluaran" && summaryKategori[t.kategori] !== undefined) {
+            if (t.tipe === "Pengeluaran") {
+                if (summaryKategori[t.kategori] === undefined) {
+                    summaryKategori[t.kategori] = 0;
+                }
                 summaryKategori[t.kategori] += Number(t.nominal);
             }
         });
@@ -497,12 +624,12 @@ class ManajerKeuanganRumah {
 
         if (this.chart) { this.chart.destroy(); }
 
-        // Render Legend List Dinamis di Sisi Kanan (Meskipun nominal 0, tetap tampilkan agar visualnya penuh seperti mock)
+        // Render Legend List
         legendList.innerHTML = '';
-        const colors = ['#00c49f', '#ef4444', '#3b82f6', '#f97316', '#eab308', '#a855f7', '#64748b', '#ec4899', '#6366f1'];
+        const colors = ['#00c49f', '#ef4444', '#3b82f6', '#f97316', '#eab308', '#a855f7', '#64748b', '#ec4899', '#6366f1', '#14b8a6', '#8b5cf6', '#f59e0b'];
         
-        this.semuaKategoriPengeluaran.forEach((k, idx) => {
-            const color = colors[idx] || '#64748b';
+        activeKategori.forEach((k, idx) => {
+            const color = colors[idx % colors.length];
             const nominal = summaryKategori[k] || 0;
             const percent = totalBulanIni > 0 ? ((nominal / totalBulanIni) * 100).toFixed(1) : '0.0';
             
@@ -529,12 +656,11 @@ class ManajerKeuanganRumah {
         canvas.style.display = 'block';
         emptyState.style.display = 'none';
 
-        // Hanya masukkan data bernilai > 0 ke ChartJS agar tidak merusak grafis donat
         const filteredLabels = activeKategori.filter(k => summaryKategori[k] > 0);
         const filteredData = filteredLabels.map(k => summaryKategori[k]);
         const filteredColors = filteredLabels.map(k => {
-            const idx = this.semuaKategoriPengeluaran.indexOf(k);
-            return colors[idx] || '#64748b';
+            const idx = activeKategori.indexOf(k);
+            return colors[idx % colors.length];
         });
 
         this.chart = new Chart(ctx, {
@@ -553,9 +679,7 @@ class ManajerKeuanganRumah {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { 
-                    legend: { 
-                        display: false // Sembunyikan legenda internal Chart.js karena kita pakai kustom legend di kanan
-                    },
+                    legend: { display: false },
                     tooltip: {
                         callbacks: {
                             label: (context) => {
@@ -580,6 +704,7 @@ class ManajerKeuanganRumah {
         
         if(!tgl || !nom) return;
 
+        // Buat bulan_tahun dari tanggal yang dipilih user (bukan dari Date object)
         const blnThn = tgl.substring(0, 7);
         const payload = {
             action: "add_transaksi",
@@ -587,7 +712,7 @@ class ManajerKeuanganRumah {
             tanggal: tgl,
             kategori: kat,
             tipe: tipe,
-            nominal: nom,
+            nominal: Number(nom),
             keterangan: ket,
             bulan_tahun: blnThn
         };
@@ -597,38 +722,153 @@ class ManajerKeuanganRumah {
             document.getElementById('txNominal').value = '';
             document.getElementById('txKeterangan').value = '';
             Swal.fire("Berhasil", "Data transaksi sukses disimpan ke Google Sheets", "success");
-            this.switchTab('dasbor'); // Kembali ke dasbor setelah mencatat
+            this.switchTab('dasbor');
+        }
+    }
+
+    addMonthsToBulanTahun(bulanTahun, offset) {
+        const [year, month] = bulanTahun.split('-').map(Number);
+        const date = new Date(year, month - 1 + offset, 1);
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+    }
+
+    async postMultipleToSheets(payloads) {
+        this.showLoader(true);
+        try {
+            for (const payload of payloads) {
+                const response = await fetch(CONFIG.API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(payload)
+                });
+                const hasil = await response.json();
+                if (hasil.status !== "success") {
+                    throw new Error(hasil.message || "Gagal menyimpan salah satu transaksi");
+                }
+            }
+            await this.sinkronisasiDataSheets();
+            return true;
+        } catch (e) {
+            Swal.fire("Koneksi Gagal", "Gagal mengirim data ke server Google: " + e.message, "error");
+            return false;
+        } finally {
+            this.showLoader(false);
         }
     }
 
     async rekamCepatWajib(kategori) {
-        const tgl = new Date().toISOString().split('T')[0];
-        const blnThn = tgl.substring(0, 7);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayMonth = todayStr.substring(0, 7);
+        const activePeriod = this.getPeriodeTerpilih();
+        const defaultBulanTahun = activePeriod.bln !== "all" 
+            ? `${activePeriod.thn}-${activePeriod.bln}` 
+            : todayMonth;
 
-        const { value: nominal } = await Swal.fire({
+        const { value: formValues } = await Swal.fire({
             title: `Input Pembayaran ${kategori}`,
-            input: 'number',
-            inputLabel: 'Masukkan Jumlah Nominal Pembayaran',
-            inputPlaceholder: 'Contoh: 150000',
+            html: `
+                <div style="text-align: left; padding: 0 0.5rem;">
+                    <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Nominal per Bulan (Rp)</label>
+                    <input id="swal-nominal" class="swal2-input" type="number" placeholder="Contoh: 600000" style="margin: 0 0 1.25rem 0; width: 100%; box-sizing: border-box; font-size: 0.9rem; padding: 0.65rem;">
+                    
+                    <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Bulan & Tahun Mulai Tagihan</label>
+                    <input id="swal-bulan-tahun" class="swal2-input" type="month" value="${defaultBulanTahun}" style="margin: 0 0 1.25rem 0; width: 100%; box-sizing: border-box; font-size: 0.9rem; padding: 0.65rem;">
+                    
+                    <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.35rem;">Jumlah Bulan Dibayar</label>
+                    <select id="swal-durasi" class="swal2-input" style="margin: 0; width: 100%; box-sizing: border-box; font-size: 0.9rem; padding: 0.65rem; height: auto;">
+                        <option value="1">1 Bulan (Tagihan Bulan Ini)</option>
+                        <option value="2">2 Bulan (Bulan ini & Bulan Depan)</option>
+                        <option value="3">3 Bulan</option>
+                        <option value="4">4 Bulan</option>
+                        <option value="6">6 Bulan</option>
+                        <option value="12">12 Bulan (1 Tahun)</option>
+                    </select>
+                </div>
+            `,
+            focusConfirm: false,
             showCancelButton: true,
             confirmButtonColor: '#00c49f',
             cancelButtonColor: '#64748b',
             confirmButtonText: 'Bayar Sekarang',
-            inputValidator: (value) => { if (!value) { return 'Nominal uang tidak boleh kosong!' } }
+            cancelButtonText: 'Batal',
+            preConfirm: () => {
+                const nominal = document.getElementById('swal-nominal').value;
+                const bulanTahun = document.getElementById('swal-bulan-tahun').value;
+                const durasi = document.getElementById('swal-durasi').value;
+                if (!nominal || Number(nominal) <= 0) {
+                    Swal.showValidationMessage('Nominal uang tidak boleh kosong!');
+                    return false;
+                }
+                if (!bulanTahun) {
+                    Swal.showValidationMessage('Bulan & tahun tagihan harus diisi!');
+                    return false;
+                }
+                return { nominal, bulanTahun, durasi: Number(durasi) };
+            }
         });
 
-        if (nominal) {
-            const payload = {
-                action: "add_transaksi",
-                id: 'TX-' + Date.now(),
-                tanggal: tgl,
-                kategori: kategori,
-                tipe: "Pengeluaran",
-                nominal: nominal,
-                keterangan: "Pembayaran Cepat Bulanan",
-                bulan_tahun: blnThn
-            };
-            await this.postToSheets(payload);
+        if (formValues) {
+            const { nominal, bulanTahun, durasi } = formValues;
+            const payloads = [];
+            
+            for (let i = 0; i < durasi; i++) {
+                const targetBulanTahun = this.addMonthsToBulanTahun(bulanTahun, i);
+                
+                // Tanggal transaksi: gunakan tanggal 1 dari bulan target agar tersaring benar
+                // Kecuali bulan saat ini, gunakan tanggal hari ini
+                const tgl = (targetBulanTahun === todayMonth) ? todayStr : `${targetBulanTahun}-01`;
+                
+                let keterangan = "Pembayaran Cepat Bulanan";
+                if (durasi > 1) {
+                    keterangan += ` (Bulan ke-${i+1} dari ${durasi})`;
+                }
+
+                payloads.push({
+                    action: "add_transaksi",
+                    id: 'TX-' + Date.now() + '-' + i,
+                    tanggal: tgl,
+                    kategori: kategori,
+                    tipe: "Pengeluaran",
+                    nominal: Number(nominal),
+                    keterangan: keterangan,
+                    bulan_tahun: targetBulanTahun
+                });
+            }
+
+            // Konfirmasi jika bayar banyak bulan
+            if (durasi > 1) {
+                const totalBayar = Number(nominal) * durasi;
+                const konfirmasi = await Swal.fire({
+                    title: 'Konfirmasi Pembayaran',
+                    html: `
+                        <div style="text-align: left; font-size: 0.9rem; line-height: 1.6;">
+                            <p><strong>Kategori:</strong> ${kategori}</p>
+                            <p><strong>Nominal per bulan:</strong> ${this.formatRupiah(nominal)}</p>
+                            <p><strong>Jumlah bulan:</strong> ${durasi} bulan</p>
+                            <p><strong>Mulai dari:</strong> ${bulanTahun}</p>
+                            <hr style="margin: 0.5rem 0; border-color: #eee;">
+                            <p><strong>Total Pembayaran:</strong> <span style="color: #f43f5e; font-size: 1.1rem; font-weight: 700;">${this.formatRupiah(totalBayar)}</span></p>
+                            <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">Setiap bulan akan tercatat sebagai transaksi terpisah.</p>
+                        </div>
+                    `,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonColor: '#00c49f',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Ya, Bayar Semua',
+                    cancelButtonText: 'Batal'
+                });
+                
+                if (!konfirmasi.isConfirmed) return;
+            }
+            
+            const sukses = await this.postMultipleToSheets(payloads);
+            if (sukses) {
+                Swal.fire("Berhasil!", `${durasi} transaksi pembayaran "${kategori}" berhasil dicatat.`, "success");
+            }
         }
     }
 
@@ -669,7 +909,7 @@ class ManajerKeuanganRumah {
         if(sukses) {
             document.getElementById('formTabungan').reset();
             Swal.fire("Rencana Dibuat", "Celengan impian berhasil disinkronkan ke Cloud.", "success");
-            this.switchTab('dasbor'); // Kembali ke dasbor
+            this.switchTab('dasbor');
         }
     }
 
@@ -696,7 +936,6 @@ class ManajerKeuanganRumah {
             const tgl = new Date().toISOString().split('T')[0];
             const blnThn = tgl.substring(0, 7);
 
-            // Langkah 1: Kirim Log Pengurangan Saldo di tabel Transaksi
             await this.postToSheets({
                 action: "add_transaksi",
                 id: 'TX-' + Date.now(),
@@ -708,7 +947,6 @@ class ManajerKeuanganRumah {
                 bulan_tahun: blnThn
             });
 
-            // Langkah 2: Perbarui Jumlah Terkumpul di tabel Tabungan
             await this.postToSheets({
                 action: "update_tabungan",
                 id: id,
@@ -738,7 +976,6 @@ class ManajerKeuanganRumah {
             const tgl = new Date().toISOString().split('T')[0];
             const blnThn = tgl.substring(0, 7);
 
-            // Catat Pemasukan
             await this.postToSheets({
                 action: "add_transaksi",
                 id: 'TX-' + Date.now(),
@@ -750,12 +987,10 @@ class ManajerKeuanganRumah {
                 bulan_tahun: blnThn
             });
 
-            // Hapus celengan
             await this.postToSheets({ action: "delete_tabungan", id: id });
             Swal.fire("Pencairan Berhasil", "Dana berhasil dikembalikan ke kas utama dan celengan diarsipkan.", "success");
 
         } else if (tanya.isDenied) {
-            // Cukup hapus tabungan
             await this.postToSheets({ action: "delete_tabungan", id: id });
             Swal.fire("Selesai!", "Celengan telah ditandai selesai dan diarsipkan.", "success");
         }
@@ -872,22 +1107,17 @@ class ManajerKeuanganRumah {
     }
 
     switchTab(tabId) {
-        // Sembunyikan seluruh section view
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
         
-        // Tampilkan section view terpilih
         const targetView = document.getElementById('view' + tabId.charAt(0).toUpperCase() + tabId.slice(1));
         if (targetView) targetView.classList.add('active');
         
-        // Reset kelas active di navigasi atas & mobile
         document.querySelectorAll('.nav-tab-item').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
         
-        // Aktifkan tombol navigasi atas
         const headerBtn = document.getElementById('tabBtn-' + tabId);
         if (headerBtn) headerBtn.classList.add('active');
         
-        // Aktifkan tombol navigasi mobile bawah
         const mobileBtn = document.getElementById('mobileTabBtn-' + tabId);
         if (mobileBtn) mobileBtn.classList.add('active');
     }
@@ -898,11 +1128,17 @@ class ManajerKeuanganRumah {
 
     formatTanggalIndo(stringTanggal) {
         if(!stringTanggal) return '-';
-        const dateObj = new Date(stringTanggal);
-        if (isNaN(dateObj.getTime())) return stringTanggal;
-        
-        const opsi = { day: 'numeric', month: 'short', year: 'numeric' };
-        return dateObj.toLocaleDateString('id-ID', opsi);
+        // Parse dari string langsung agar tidak kena UTC offset
+        const tglStr = String(stringTanggal);
+        const match = tglStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (match) {
+            const months = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+            const day = parseInt(match[3]);
+            const month = months[parseInt(match[2])];
+            const year = match[1];
+            return `${day} ${month} ${year}`;
+        }
+        return stringTanggal;
     }
 }
 

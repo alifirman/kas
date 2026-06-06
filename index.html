@@ -29,10 +29,10 @@
         </div>
         
         <div class="nav-tabs">
-            <button id="tabBtn-dasbor" class="nav-tab-item active" onclick="aplikasi.switchTab('dasbor', this)"><i class="fa-solid fa-chart-simple"></i> Dasbor</button>
-            <button id="tabBtn-transaksi" class="nav-tab-item" onclick="aplikasi.switchTab('transaksi', this)"><i class="fa-solid fa-pen-to-square"></i> Catat Transaksi</button>
-            <button id="tabBtn-tabungan" class="nav-tab-item" onclick="aplikasi.switchTab('tabungan', this)"><i class="fa-solid fa-piggy-bank"></i> Rencana Tabungan</button>
-            <button id="tabBtn-riwayat" class="nav-tab-item" onclick="aplikasi.switchTab('riwayat', this)"><i class="fa-solid fa-receipt"></i> Riwayat & Filter</button>
+            <button id="tabBtn-dasbor" class="nav-tab-item active" onclick="aplikasi.switchTab('dasbor')"><i class="fa-solid fa-chart-simple"></i> Dasbor</button>
+            <button id="tabBtn-transaksi" class="nav-tab-item" onclick="aplikasi.switchTab('transaksi')"><i class="fa-solid fa-pen-to-square"></i> Catat Transaksi</button>
+            <button id="tabBtn-tabungan" class="nav-tab-item" onclick="aplikasi.switchTab('tabungan')"><i class="fa-solid fa-piggy-bank"></i> Rencana Tabungan</button>
+            <button id="tabBtn-riwayat" class="nav-tab-item" onclick="aplikasi.switchTab('riwayat')"><i class="fa-solid fa-receipt"></i> Riwayat & Filter</button>
         </div>
 
         <div class="nav-meta">
@@ -77,7 +77,7 @@
                 <div class="stat-info">
                     <p>TOTAL PENDAPATAN</p>
                     <h2 id="statPendapatan">Rp 0</h2>
-                    <div class="stat-desc">Bulan & tahun tersaring</div>
+                    <div class="stat-desc" id="descPendapatan">Periode: -</div>
                 </div>
                 <div class="stat-icon-wrapper"><i class="fa-solid fa-wallet"></i></div>
             </div>
@@ -85,7 +85,7 @@
                 <div class="stat-info">
                     <p>TOTAL PENGELUARAN</p>
                     <h2 id="statPengeluaran">Rp 0</h2>
-                    <div class="stat-desc">Termasuk iuran & belanja</div>
+                    <div class="stat-desc" id="descPengeluaran">Periode: -</div>
                 </div>
                 <div class="stat-icon-wrapper"><i class="fa-solid fa-arrow-down-long"></i></div>
             </div>
@@ -324,10 +324,10 @@
 
     <!-- Navigasi Mobile Bawah Gelap -->
     <div class="mobile-nav">
-        <button id="mobileTabBtn-dasbor" class="mobile-nav-item active" onclick="aplikasi.switchTab('dasbor', this)"><i class="fa-solid fa-chart-simple"></i>Dasbor</button>
-        <button id="mobileTabBtn-transaksi" class="mobile-nav-item" onclick="aplikasi.switchTab('transaksi', this)"><i class="fa-solid fa-circle-plus"></i>Catat</button>
-        <button id="mobileTabBtn-tabungan" class="mobile-nav-item" onclick="aplikasi.switchTab('tabungan', this)"><i class="fa-solid fa-piggy-bank"></i>Tabungan</button>
-        <button id="mobileTabBtn-riwayat" class="mobile-nav-item" onclick="aplikasi.switchTab('riwayat', this)"><i class="fa-solid fa-receipt"></i>Riwayat</button>
+        <button id="mobileTabBtn-dasbor" class="mobile-nav-item active" onclick="aplikasi.switchTab('dasbor')"><i class="fa-solid fa-chart-simple"></i>Dasbor</button>
+        <button id="mobileTabBtn-transaksi" class="mobile-nav-item" onclick="aplikasi.switchTab('transaksi')"><i class="fa-solid fa-circle-plus"></i>Catat</button>
+        <button id="mobileTabBtn-tabungan" class="mobile-nav-item" onclick="aplikasi.switchTab('tabungan')"><i class="fa-solid fa-piggy-bank"></i>Tabungan</button>
+        <button id="mobileTabBtn-riwayat" class="mobile-nav-item" onclick="aplikasi.switchTab('riwayat')"><i class="fa-solid fa-receipt"></i>Riwayat</button>
     </div>
 
     <script src="config.js"></script>

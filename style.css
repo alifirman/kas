@@ -10,7 +10,7 @@
     --card-light: #ffffff;
     --card-light-border: rgba(226, 232, 240, 0.8);
     
-    --primary: #00c49f; /* Vibrant Green/Teal */
+    --primary: #00c49f;
     --primary-hover: #00a887;
     --success: #10b981;
     --danger: #ef4444;
@@ -40,7 +40,9 @@ body {
     min-height: 100vh;
 }
 
+/* ======================= */
 /* Navigasi Utama */
+/* ======================= */
 .navbar {
     background-color: var(--bg-dark);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -120,7 +122,9 @@ body {
     margin-top: 0.15rem;
 }
 
+/* ======================= */
 /* Loader Overlay */
+/* ======================= */
 .loading-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -138,7 +142,9 @@ body {
 }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* Hero Section */
+/* ======================= */
+/* Hero Section & Container */
+/* ======================= */
 .container { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
 
 .hero {
@@ -189,10 +195,12 @@ body {
     color: var(--text-white);
 }
 
-/* Row Kartu Statistik di Atas */
+/* ======================= */
+/* Kartu Statistik */
+/* ======================= */
 .stats-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 1.25rem;
     margin-bottom: 2.25rem;
 }
@@ -217,7 +225,7 @@ body {
     margin-bottom: 0.45rem;
 }
 .stat-info h2 {
-    font-size: 1.45rem;
+    font-size: 1.35rem;
     font-weight: 700;
     font-family: 'Outfit', sans-serif;
 }
@@ -234,9 +242,9 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 1rem;
+    flex-shrink: 0;
 }
 
-/* Stat colors matching screen */
 .stat-card.pendapatan h2 { color: var(--primary); }
 .stat-card.pendapatan .stat-icon-wrapper { background: rgba(0, 196, 159, 0.12); color: var(--primary); }
 
@@ -249,7 +257,9 @@ body {
 .stat-card.tabungan h2 { color: #06b6d4; }
 .stat-card.tabungan .stat-icon-wrapper { background: rgba(6, 182, 212, 0.12); color: #06b6d4; }
 
+/* ======================= */
 /* Grid Bawah */
+/* ======================= */
 .bottom-grid {
     display: grid;
     grid-template-columns: 1.75fr 1.25fr;
@@ -262,7 +272,9 @@ body {
     }
 }
 
-/* Light Card Styling for Bottom Grid */
+/* ======================= */
+/* Light Card */
+/* ======================= */
 .light-card {
     background-color: var(--card-light);
     border: 1px solid var(--card-light-border);
@@ -321,7 +333,9 @@ body {
     text-decoration: underline;
 }
 
-/* Bagan Donut Pembagian Pengeluaran */
+/* ======================= */
+/* Bagan Donut */
+/* ======================= */
 .donut-layout {
     display: grid;
     grid-template-columns: 1.1fr 1.9fr;
@@ -367,6 +381,7 @@ body {
     height: 8px;
     border-radius: 50%;
     display: inline-block;
+    flex-shrink: 0;
 }
 .donut-legend-name {
     color: var(--text-muted);
@@ -390,7 +405,9 @@ body {
     text-align: right;
 }
 
+/* ======================= */
 /* Target Pembelian Terdekat */
+/* ======================= */
 .target-list {
     display: flex;
     flex-direction: column;
@@ -427,11 +444,30 @@ body {
     transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ======================= */
 /* Checklist Pengeluaran */
+/* ======================= */
 .checklist-list {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+}
+.checklist-period-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(0, 196, 159, 0.08);
+    padding: 0.3rem 0.65rem;
+    border-radius: 0.35rem;
+    width: fit-content;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.3px;
+}
+.checklist-period-badge i {
+    font-size: 0.65rem;
 }
 .checklist-item-card {
     background-color: #f8fafc;
@@ -460,6 +496,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 0.8rem;
+    flex-shrink: 0;
 }
 .checklist-item-details {
     display: flex;
@@ -488,6 +525,8 @@ body {
     font-size: 0.85rem;
     font-weight: 700;
     color: var(--text-dark);
+    text-align: right;
+    white-space: nowrap;
 }
 
 .checklist-item-pay-btn {
@@ -503,9 +542,12 @@ body {
 }
 .checklist-item-pay-btn:hover {
     background-color: var(--primary-hover);
+    transform: translateY(-1px);
 }
 
+/* ======================= */
 /* Sections for dynamic Tabs */
+/* ======================= */
 .view-section {
     display: none;
 }
@@ -513,7 +555,9 @@ body {
     display: block;
 }
 
-/* Styles for Forms & Management Views */
+/* ======================= */
+/* Forms & Management Views */
+/* ======================= */
 .centered-container {
     max-width: 600px;
     margin: 0 auto;
@@ -561,7 +605,33 @@ body {
     transform: translateY(-1px);
 }
 
-/* History view & lists */
+/* ======================= */
+/* Settings Button */
+/* ======================= */
+.btn-settings {
+    background: none;
+    border: 1px solid var(--card-light-border);
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+.btn-settings:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(0, 196, 159, 0.08);
+    transform: rotate(45deg);
+}
+
+/* ======================= */
+/* History & Transaction List */
+/* ======================= */
 .search-container {
     position: relative;
     margin-bottom: 1rem;
@@ -609,9 +679,36 @@ body {
 }
 
 .tx-list {
-    max-height: 480px;
+    max-height: 520px;
     overflow-y: auto;
 }
+
+/* Transaction Summary Bar */
+.tx-summary-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.65rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #f1f5f9;
+}
+.tx-summary-amounts {
+    display: flex;
+    gap: 0.75rem;
+    font-weight: 700;
+}
+.tx-summary-amounts .pemasukan {
+    color: var(--success);
+}
+.tx-summary-amounts .pengeluaran {
+    color: #f43f5e;
+}
+
 .tx-item {
     display: flex;
     justify-content: space-between;
@@ -619,6 +716,10 @@ body {
     padding: 0.85rem 0.5rem;
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.85rem;
+    transition: background 0.15s;
+}
+.tx-item:hover {
+    background: #fafbfd;
 }
 .tx-item:last-child {
     border-bottom: none;
@@ -627,10 +728,15 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
+    min-width: 0;
+    flex: 1;
 }
 .tx-desc {
     font-weight: 700;
     color: var(--text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .tx-note {
     font-weight: 400;
@@ -645,11 +751,13 @@ body {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-shrink: 0;
 }
 .tx-amount {
     font-weight: 700;
     font-family: 'Outfit', sans-serif;
     font-size: 0.9rem;
+    white-space: nowrap;
 }
 .tx-amount.pengeluaran { color: #f43f5e; }
 .tx-amount.pemasukan { color: var(--success); }
@@ -668,13 +776,22 @@ body {
     background-color: rgba(244, 63, 94, 0.08);
 }
 
-/* Saving Plan Management list items */
+/* ======================= */
+/* Saving Plan List Items */
+/* ======================= */
 .saving-item {
     border: 1px solid var(--card-light-border);
     padding: 1.15rem;
     border-radius: 0.85rem;
     margin-bottom: 0.85rem;
     background: #f8fafc;
+    transition: transform 0.2s;
+}
+.saving-item:hover {
+    transform: translateY(-1px);
+}
+.saving-item:last-child {
+    margin-bottom: 0;
 }
 .saving-head {
     display: flex;
@@ -689,6 +806,25 @@ body {
 .saving-persen.selesai {
     color: var(--success);
 }
+
+/* Progress Bar (untuk tabungan/celengan) */
+.progress-bar {
+    background-color: #e2e8f0;
+    height: 6px;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.25rem;
+}
+.progress-fill {
+    background: linear-gradient(90deg, var(--warning), #fbbf24);
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.progress-fill.selesai {
+    background: linear-gradient(90deg, var(--success), #34d399);
+}
+
 .saving-foot {
     display: flex;
     justify-content: space-between;
@@ -746,7 +882,9 @@ body {
     margin-top: 0.35rem;
 }
 
+/* ======================= */
 /* Empty States */
+/* ======================= */
 .empty-state {
     display: flex;
     flex-direction: column;
@@ -766,7 +904,9 @@ body {
     font-weight: 500;
 }
 
-/* Modal settings */
+/* ======================= */
+/* Modal Settings */
+/* ======================= */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -809,6 +949,7 @@ body {
     font-size: 1.25rem;
     color: var(--text-muted);
     cursor: pointer;
+    transition: color 0.2s;
 }
 .modal-close:hover {
     color: #f43f5e;
@@ -839,7 +980,9 @@ body {
     to { transform: translateY(0); opacity: 1; }
 }
 
+/* ======================= */
 /* Navigasi Mobile Bawah */
+/* ======================= */
 .mobile-nav { 
     position: fixed; 
     bottom: 0; 
@@ -859,7 +1002,7 @@ body {
     display: flex; 
     flex-direction: column; 
     align-items: center; 
-    font-size: 0.75rem; 
+    font-size: 0.7rem; 
     font-weight: 700;
     color: var(--text-gray); 
     text-decoration: none; 
@@ -867,16 +1010,23 @@ body {
     border: none; 
     cursor: pointer; 
     transition: color 0.2s;
+    gap: 0.15rem;
 }
 .mobile-nav-item.active { color: var(--primary); }
-.mobile-nav-item i { font-size: 1.2rem; margin-bottom: 0.2rem; }
+.mobile-nav-item i { font-size: 1.2rem; }
 
+/* ======================= */
+/* Responsive Design */
+/* ======================= */
 @media (max-width: 768px) {
     .navbar {
-        padding: 1.25rem 1.5rem;
+        padding: 1rem 1.25rem;
     }
     .nav-tabs {
-        display: none; /* Disembunyikan di tablet/hp, pakai menu bawah */
+        display: none;
+    }
+    .nav-meta {
+        display: none;
     }
     .mobile-nav {
         display: flex;
@@ -884,13 +1034,114 @@ body {
     body {
         padding-bottom: 80px;
     }
+    .container {
+        padding: 1.25rem 1rem;
+    }
     .hero {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .hero-text h1 {
+        font-size: 1.35rem;
+    }
+    .hero-text p {
+        font-size: 0.8rem;
     }
     .hero-filters {
         width: 100%;
         justify-content: space-between;
     }
+    .stats-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    .stat-card {
+        padding: 1rem;
+        border-radius: 0.85rem;
+    }
+    .stat-info p {
+        font-size: 0.55rem;
+    }
+    .stat-info h2 {
+        font-size: 1.05rem;
+    }
+    .stat-info .stat-desc {
+        font-size: 0.55rem;
+    }
+    .stat-icon-wrapper {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+    }
+    .light-card {
+        padding: 1.15rem;
+        border-radius: 1rem;
+        margin-bottom: 1rem;
+    }
+    .light-card-title {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    .donut-legend-item {
+        font-size: 0.72rem;
+    }
+    .donut-legend-nominal {
+        font-size: 0.72rem;
+    }
+    .donut-legend-percent {
+        font-size: 0.65rem;
+        width: 38px;
+    }
+    .checklist-item-name {
+        font-size: 0.72rem;
+    }
+    .checklist-item-status {
+        font-size: 0.65rem;
+    }
+    .checklist-item-right {
+        font-size: 0.78rem;
+    }
+    .tx-desc {
+        font-size: 0.8rem;
+    }
+    .tx-amount {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    .stat-card {
+        padding: 0.85rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    .stat-icon-wrapper {
+        display: none;
+    }
+    .stat-info h2 {
+        font-size: 0.95rem;
+    }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
