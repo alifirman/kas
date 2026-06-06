@@ -11,7 +11,8 @@ class ManajerKeuanganRumah {
 
     initKategoriWajib() {
         const DEFAULT_KATEGORI_WAJIB = {
-            "SPP Sekolah Anak": { icon: "fa-graduation-cap", color: "#3b82f6" },
+            "SPP Sekolah Ibrahim": { icon: "fa-graduation-cap", color: "#3b82f6" },
+            "SPP Sekolah Hadijah": { icon: "fa-graduation-cap", color: "#ed21c8" },
             "Bisyaroh Ngaji Anak": { icon: "fa-book-open-reader", color: "#f97316" },
             "Sumbangan Kematian RT": { icon: "fa-skull-crossbones", color: "#64748b" },
             "Tagihan Listrik Rumah": { icon: "fa-bolt", color: "#eab308" },
